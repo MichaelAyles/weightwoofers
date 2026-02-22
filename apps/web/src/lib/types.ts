@@ -102,6 +102,7 @@ export interface ApiKey {
   id: string;
   name: string;
   provider: string;
+  model: string;
   is_active: number;
   created_at: string;
   updated_at: string;

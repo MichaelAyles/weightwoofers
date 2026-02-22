@@ -62,12 +62,12 @@ export function useAdminKeys() {
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  const createKey = useCallback(async (data: { name: string; key_value: string; provider?: string }) => {
+  const createKey = useCallback(async (data: { name: string; key_value: string; provider?: string; model?: string }) => {
     await api.post('/api/admin/llms', data);
     await refresh();
   }, [refresh]);
 
-  const updateKey = useCallback(async (id: string, data: { name?: string; is_active?: number }) => {
+  const updateKey = useCallback(async (id: string, data: { name?: string; is_active?: number; model?: string }) => {
     await api.put('/api/admin/llms/' + id, data);
     await refresh();
   }, [refresh]);

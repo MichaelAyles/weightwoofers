@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
     name TEXT NOT NULL,
     key_value TEXT NOT NULL,
     provider TEXT NOT NULL DEFAULT 'openrouter',
+    model TEXT DEFAULT 'google/gemini-3-flash-preview',
     is_active INTEGER DEFAULT 1,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))

@@ -15,7 +15,7 @@ export async function chatCompletion(
   options: OpenRouterOptions = {}
 ): Promise<string> {
   const {
-    model = 'google/gemini-2.0-flash-001',
+    model = 'google/gemini-3-flash-preview',
     temperature = 0.1,
     max_tokens = 500,
   } = options;

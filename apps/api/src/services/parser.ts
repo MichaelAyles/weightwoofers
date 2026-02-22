@@ -4,7 +4,8 @@ import { chatCompletion } from './openrouter';
 export async function parseInput(
   apiKey: string,
   rawInput: string,
-  knownFoods: Pick<Food, 'canonical_name' | 'brand' | 'variant' | 'aliases'>[]
+  knownFoods: Pick<Food, 'canonical_name' | 'brand' | 'variant' | 'aliases'>[],
+  model?: string
 ): Promise<ParsedInput> {
   const systemPrompt = `You are a pet food input parser. Extract structured data from natural language food logging.
 
@@ -32,7 +33,7 @@ Rules:
   const content = await chatCompletion(apiKey, [
     { role: 'system', content: systemPrompt },
     { role: 'user', content: rawInput },
-  ], { max_tokens: 200 });
+  ], { max_tokens: 200, model });
 
   const cleaned = content.replace(/```json\n?|\n?```/g, '').trim();
   return JSON.parse(cleaned) as ParsedInput;

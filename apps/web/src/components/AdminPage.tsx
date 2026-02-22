@@ -107,12 +107,24 @@ function UsersTab() {
   );
 }
 
+const POPULAR_MODELS = [
+  'google/gemini-3-flash-preview',
+  'google/gemini-2.0-flash-001',
+  'anthropic/claude-haiku-4-5-20251001',
+  'anthropic/claude-sonnet-4-6',
+  'openai/gpt-4o-mini',
+  'openai/gpt-4o',
+  'meta-llama/llama-4-maverick',
+];
+
 function KeysTab() {
   const { keys, loading, createKey, updateKey, deleteKey } = useAdminKeys();
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
   const [keyValue, setKeyValue] = useState('');
   const [provider, setProvider] = useState('openrouter');
+  const [model, setModel] = useState('google/gemini-3-flash-preview');
+  const [customModel, setCustomModel] = useState('');
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [testing, setTesting] = useState(false);
 
@@ -120,8 +132,11 @@ function KeysTab() {
     setTesting(true);
     setTestResult(null);
     try {
-      const res = await api.post<{ success: boolean; reply?: string; error?: string }>('/api/admin/llms/test', {});
-      setTestResult({ success: res.success, message: res.reply || res.error || 'No response' });
+      const res = await api.post<{ success: boolean; reply?: string; model?: string; error?: string }>('/api/admin/llms/test', {});
+      const msg = res.success
+        ? `${res.reply} (via ${res.model})`
+        : (res.error || 'No response');
+      setTestResult({ success: res.success, message: msg });
     } catch (e) {
       setTestResult({ success: false, message: e instanceof Error ? e.message : 'Request failed' });
     }
@@ -130,18 +145,21 @@ function KeysTab() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    await createKey({ name, key_value: keyValue, provider });
+    const selectedModel = model === 'custom' ? customModel : model;
+    await createKey({ name, key_value: keyValue, provider, model: selectedModel });
     setName('');
     setKeyValue('');
     setProvider('openrouter');
+    setModel('google/gemini-3-flash-preview');
+    setCustomModel('');
     setShowForm(false);
   }
 
-  if (loading) return <p className="text-text-muted">Loading API keys...</p>;
+  if (loading) return <p className="text-text-muted">Loading LLM configs...</p>;
 
   return (
     <div>
-      <div className="mb-4 flex items-center gap-3">
+      <div className="mb-4 flex items-center gap-3 flex-wrap">
         <button
           onClick={() => setShowForm(!showForm)}
           className="px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary/90 transition-colors"
@@ -186,6 +204,31 @@ function KeysTab() {
             />
           </div>
           <div>
+            <label className="block text-xs text-text-muted mb-1">Model</label>
+            <select
+              value={POPULAR_MODELS.includes(model) ? model : 'custom'}
+              onChange={(e) => {
+                setModel(e.target.value);
+                if (e.target.value !== 'custom') setCustomModel('');
+              }}
+              className="w-full px-3 py-1.5 text-sm rounded-lg border border-border bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              {POPULAR_MODELS.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+              <option value="custom">Custom...</option>
+            </select>
+            {model === 'custom' && (
+              <input
+                value={customModel}
+                onChange={(e) => setCustomModel(e.target.value)}
+                required
+                className="w-full mt-2 px-3 py-1.5 text-sm rounded-lg border border-border bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="provider/model-name"
+              />
+            )}
+          </div>
+          <div>
             <label className="block text-xs text-text-muted mb-1">Provider</label>
             <input
               value={provider}
@@ -194,7 +237,7 @@ function KeysTab() {
             />
           </div>
           <button type="submit" className="px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary/90">
-            Save Key
+            Save
           </button>
         </form>
       )}
@@ -204,9 +247,8 @@ function KeysTab() {
           <thead className="text-xs text-text-muted uppercase bg-surface border-b border-border">
             <tr>
               <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Provider</th>
+              <th className="px-4 py-3">Model</th>
               <th className="px-4 py-3">Active</th>
-              <th className="px-4 py-3">Created</th>
               <th className="px-4 py-3">Actions</th>
             </tr>
           </thead>
@@ -214,7 +256,20 @@ function KeysTab() {
             {keys.map((k) => (
               <tr key={k.id} className="border-b border-border bg-surface">
                 <td className="px-4 py-3 text-text">{k.name}</td>
-                <td className="px-4 py-3 text-text">{k.provider}</td>
+                <td className="px-4 py-3">
+                  <select
+                    value={POPULAR_MODELS.includes(k.model) ? k.model : k.model}
+                    onChange={(e) => updateKey(k.id, { model: e.target.value })}
+                    className="text-sm rounded-lg border border-border px-2 py-1 text-text bg-surface focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    {POPULAR_MODELS.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                    {!POPULAR_MODELS.includes(k.model) && (
+                      <option value={k.model}>{k.model}</option>
+                    )}
+                  </select>
+                </td>
                 <td className="px-4 py-3">
                   <button
                     onClick={() => updateKey(k.id, { is_active: k.is_active ? 0 : 1 })}
@@ -225,11 +280,10 @@ function KeysTab() {
                     {k.is_active ? 'Active' : 'Inactive'}
                   </button>
                 </td>
-                <td className="px-4 py-3 text-text-muted">{new Date(k.created_at).toLocaleDateString()}</td>
                 <td className="px-4 py-3">
                   <button
                     onClick={() => {
-                      if (confirm(`Delete API key "${k.name}"?`)) deleteKey(k.id);
+                      if (confirm(`Delete "${k.name}"?`)) deleteKey(k.id);
                     }}
                     className="text-xs text-red-500 hover:underline"
                   >
@@ -240,7 +294,7 @@ function KeysTab() {
             ))}
           </tbody>
         </table>
-        {keys.length === 0 && <p className="text-text-muted text-center py-8">No API keys configured.</p>}
+        {keys.length === 0 && <p className="text-text-muted text-center py-8">No LLM configurations found.</p>}
       </div>
     </div>
   );

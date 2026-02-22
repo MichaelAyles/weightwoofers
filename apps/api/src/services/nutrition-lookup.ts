@@ -12,7 +12,8 @@ export async function lookupNutrition(
   apiKey: string,
   foodName: string,
   brand: string | null,
-  variant: string | null
+  variant: string | null,
+  model?: string
 ): Promise<NutritionData | null> {
   const query = [brand, variant, foodName].filter(Boolean).join(' ');
 
@@ -33,7 +34,7 @@ Return ONLY valid JSON matching this schema:
 If you're not confident about the data, set "confident" to false and null for fields you're unsure about.`,
       },
       { role: 'user', content: `Look up nutrition for: ${query} dog food` },
-    ], { max_tokens: 200 });
+    ], { max_tokens: 200, model });
 
     const cleaned = content.replace(/```json\n?|\n?```/g, '').trim();
     const data = JSON.parse(cleaned) as NutritionData & { confident: boolean };

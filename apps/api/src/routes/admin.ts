@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import type { AppEnv, ApiKey } from '../types';
-import { getActiveApiKey } from '../services/apikeys';
+import { getActiveLLMConfig } from '../services/apikeys';
 import { chatCompletion } from '../services/openrouter';
 
 const admin = new Hono<AppEnv>();
@@ -79,16 +79,17 @@ admin.delete('/api/admin/users/:id', async (c) => {
 
 admin.get('/api/admin/llms', async (c) => {
   const { results } = await c.env.DB.prepare(
-    'SELECT id, name, provider, is_active, created_at, updated_at FROM api_keys ORDER BY created_at DESC'
+    'SELECT id, name, provider, model, is_active, created_at, updated_at FROM api_keys ORDER BY created_at DESC'
   ).all();
   return c.json({ keys: results });
 });
 
 admin.post('/api/admin/llms', async (c) => {
-  const { name, key_value, provider } = await c.req.json<{
+  const { name, key_value, provider, model } = await c.req.json<{
     name: string;
     key_value: string;
     provider?: string;
+    model?: string;
   }>();
 
   if (!name || !key_value) {
@@ -96,9 +97,9 @@ admin.post('/api/admin/llms', async (c) => {
   }
 
   const key = await c.env.DB.prepare(
-    'INSERT INTO api_keys (name, key_value, provider) VALUES (?, ?, ?) RETURNING *'
+    'INSERT INTO api_keys (name, key_value, provider, model) VALUES (?, ?, ?, ?) RETURNING *'
   )
-    .bind(name, key_value, provider || 'openrouter')
+    .bind(name, key_value, provider || 'openrouter', model || 'google/gemini-3-flash-preview')
     .first<ApiKey>();
 
   return c.json({ key: { ...key, key_value: maskKey(key!.key_value) } }, 201);
@@ -106,7 +107,7 @@ admin.post('/api/admin/llms', async (c) => {
 
 admin.put('/api/admin/llms/:id', async (c) => {
   const id = c.req.param('id');
-  const { name, is_active } = await c.req.json<{ name?: string; is_active?: number }>();
+  const { name, is_active, model } = await c.req.json<{ name?: string; is_active?: number; model?: string }>();
 
   const sets: string[] = [];
   const values: unknown[] = [];
@@ -118,6 +119,10 @@ admin.put('/api/admin/llms/:id', async (c) => {
   if (is_active !== undefined) {
     sets.push('is_active = ?');
     values.push(is_active);
+  }
+  if (model !== undefined) {
+    sets.push('model = ?');
+    values.push(model);
   }
 
   if (sets.length === 0) {
@@ -134,7 +139,7 @@ admin.put('/api/admin/llms/:id', async (c) => {
     .run();
 
   const key = await c.env.DB.prepare(
-    'SELECT id, name, provider, is_active, created_at, updated_at FROM api_keys WHERE id = ?'
+    'SELECT id, name, provider, model, is_active, created_at, updated_at FROM api_keys WHERE id = ?'
   )
     .bind(id)
     .first();
@@ -191,16 +196,16 @@ admin.delete('/api/admin/foods/:id', async (c) => {
 // --- Test API Key ---
 
 admin.post('/api/admin/llms/test', async (c) => {
-  const apiKey = await getActiveApiKey(c.env.DB, c.env.OPENROUTER_API_KEY);
-  if (!apiKey) {
+  const llm = await getActiveLLMConfig(c.env.DB, c.env.OPENROUTER_API_KEY);
+  if (!llm) {
     return c.json({ success: false, error: 'No active API key found' }, 400);
   }
 
   try {
-    const reply = await chatCompletion(apiKey, [
+    const reply = await chatCompletion(llm.apiKey, [
       { role: 'user', content: 'Say "Hello from WeightWoofers!" and nothing else.' },
-    ], { max_tokens: 50 });
-    return c.json({ success: true, reply });
+    ], { max_tokens: 50, model: llm.model });
+    return c.json({ success: true, reply, model: llm.model });
   } catch (e) {
     return c.json({ success: false, error: e instanceof Error ? e.message : 'Unknown error' }, 500);
   }

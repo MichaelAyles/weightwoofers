@@ -5,7 +5,7 @@ import { matchFood } from '../services/matcher';
 import { resolveWeightG, calculateEntryKcal, calculateCompleteness } from '../services/nutrition';
 import { generateClarifications } from '../services/profiler';
 import { lookupNutrition } from '../services/nutrition-lookup';
-import { getActiveApiKey } from '../services/apikeys';
+import { getActiveLLMConfig } from '../services/apikeys';
 
 const log = new Hono<AppEnv>();
 
@@ -25,20 +25,21 @@ log.post('/api/log', async (c) => {
     .all<Food>();
   const userFoods = foodsResult.results;
 
-  // Resolve API key (DB first, env fallback)
-  const apiKey = await getActiveApiKey(c.env.DB, c.env.OPENROUTER_API_KEY);
-  if (!apiKey) return c.json({ error: 'No API key configured' }, 500);
+  // Resolve API key + model (DB first, env fallback)
+  const llm = await getActiveLLMConfig(c.env.DB, c.env.OPENROUTER_API_KEY);
+  if (!llm) return c.json({ error: 'No API key configured' }, 500);
 
   // Parse input via LLM
   const parsed = await parseInput(
-    apiKey,
+    llm.apiKey,
     raw_input,
     userFoods.map((f) => ({
       canonical_name: f.canonical_name,
       brand: f.brand,
       variant: f.variant,
       aliases: f.aliases,
-    }))
+    })),
+    llm.model
   );
 
   // Match against known foods
@@ -76,10 +77,11 @@ log.post('/api/log', async (c) => {
     if (food && food.kcal_per_100g == null) {
       try {
         const nutrition = await lookupNutrition(
-          apiKey,
+          llm.apiKey,
           food.canonical_name,
           food.brand,
-          food.variant
+          food.variant,
+          llm.model
         );
         if (nutrition) {
           await c.env.DB.prepare(
