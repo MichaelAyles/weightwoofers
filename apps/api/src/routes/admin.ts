@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
 import type { AppEnv, ApiKey } from '../types';
+import { getActiveApiKey } from '../services/apikeys';
+import { chatCompletion } from '../services/openrouter';
 
 const admin = new Hono<AppEnv>();
 
@@ -184,6 +186,24 @@ admin.delete('/api/admin/foods/:id', async (c) => {
   await c.env.DB.prepare('UPDATE log_entries SET food_id = NULL WHERE food_id = ?').bind(id).run();
   await c.env.DB.prepare('DELETE FROM foods WHERE id = ?').bind(id).run();
   return c.json({ ok: true });
+});
+
+// --- Test API Key ---
+
+admin.post('/api/admin/keys/test', async (c) => {
+  const apiKey = await getActiveApiKey(c.env.DB, c.env.OPENROUTER_API_KEY);
+  if (!apiKey) {
+    return c.json({ success: false, error: 'No active API key found' }, 400);
+  }
+
+  try {
+    const reply = await chatCompletion(apiKey, [
+      { role: 'user', content: 'Say "Hello from WeightWoofers!" and nothing else.' },
+    ], { max_tokens: 50 });
+    return c.json({ success: true, reply });
+  } catch (e) {
+    return c.json({ success: false, error: e instanceof Error ? e.message : 'Unknown error' }, 500);
+  }
 });
 
 function maskKey(key: string): string {

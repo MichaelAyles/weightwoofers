@@ -2,7 +2,7 @@
 export type AppEnv = {
   Bindings: {
     DB: D1Database;
-    OPENROUTER_API_KEY: string;
+    OPENROUTER_API_KEY?: string;
   };
   Variables: {
     userId: string;

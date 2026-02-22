@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAdminUsers, useAdminKeys, useAdminPets, useAdminFoods } from '../hooks/useAdmin';
+import { api } from '../lib/api';
 
 type Tab = 'users' | 'keys' | 'pets' | 'foods';
 
@@ -112,6 +113,20 @@ function KeysTab() {
   const [name, setName] = useState('');
   const [keyValue, setKeyValue] = useState('');
   const [provider, setProvider] = useState('openrouter');
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [testing, setTesting] = useState(false);
+
+  async function handleTest() {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await api.post<{ success: boolean; reply?: string; error?: string }>('/api/admin/keys/test', {});
+      setTestResult({ success: res.success, message: res.reply || res.error || 'No response' });
+    } catch (e) {
+      setTestResult({ success: false, message: e instanceof Error ? e.message : 'Request failed' });
+    }
+    setTesting(false);
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -126,13 +141,25 @@ function KeysTab() {
 
   return (
     <div>
-      <div className="mb-4">
+      <div className="mb-4 flex items-center gap-3">
         <button
           onClick={() => setShowForm(!showForm)}
           className="px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary/90 transition-colors"
         >
           {showForm ? 'Cancel' : 'Add Key'}
         </button>
+        <button
+          onClick={handleTest}
+          disabled={testing}
+          className="px-3 py-1.5 bg-surface text-text text-sm rounded-lg border border-border hover:bg-surface-dim transition-colors disabled:opacity-50"
+        >
+          {testing ? 'Testing...' : 'Test Connection'}
+        </button>
+        {testResult && (
+          <span className={`text-sm ${testResult.success ? 'text-success' : 'text-danger'}`}>
+            {testResult.message}
+          </span>
+        )}
       </div>
 
       {showForm && (
