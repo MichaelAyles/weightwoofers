@@ -77,14 +77,14 @@ admin.delete('/api/admin/users/:id', async (c) => {
 
 // --- API Keys ---
 
-admin.get('/api/admin/keys', async (c) => {
+admin.get('/api/admin/llms', async (c) => {
   const { results } = await c.env.DB.prepare(
     'SELECT id, name, provider, is_active, created_at, updated_at FROM api_keys ORDER BY created_at DESC'
   ).all();
   return c.json({ keys: results });
 });
 
-admin.post('/api/admin/keys', async (c) => {
+admin.post('/api/admin/llms', async (c) => {
   const { name, key_value, provider } = await c.req.json<{
     name: string;
     key_value: string;
@@ -104,7 +104,7 @@ admin.post('/api/admin/keys', async (c) => {
   return c.json({ key: { ...key, key_value: maskKey(key!.key_value) } }, 201);
 });
 
-admin.put('/api/admin/keys/:id', async (c) => {
+admin.put('/api/admin/llms/:id', async (c) => {
   const id = c.req.param('id');
   const { name, is_active } = await c.req.json<{ name?: string; is_active?: number }>();
 
@@ -142,7 +142,7 @@ admin.put('/api/admin/keys/:id', async (c) => {
   return c.json({ key });
 });
 
-admin.delete('/api/admin/keys/:id', async (c) => {
+admin.delete('/api/admin/llms/:id', async (c) => {
   const id = c.req.param('id');
   await c.env.DB.prepare('DELETE FROM api_keys WHERE id = ?').bind(id).run();
   return c.json({ ok: true });
@@ -190,7 +190,7 @@ admin.delete('/api/admin/foods/:id', async (c) => {
 
 // --- Test API Key ---
 
-admin.post('/api/admin/keys/test', async (c) => {
+admin.post('/api/admin/llms/test', async (c) => {
   const apiKey = await getActiveApiKey(c.env.DB, c.env.OPENROUTER_API_KEY);
   if (!apiKey) {
     return c.json({ success: false, error: 'No active API key found' }, 400);

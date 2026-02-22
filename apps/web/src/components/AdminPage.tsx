@@ -13,7 +13,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'users', label: 'Users' },
-    { key: 'keys', label: 'API Keys' },
+    { key: 'keys', label: 'LLMs' },
     { key: 'pets', label: 'Pets' },
     { key: 'foods', label: 'Foods' },
   ];
@@ -120,7 +120,7 @@ function KeysTab() {
     setTesting(true);
     setTestResult(null);
     try {
-      const res = await api.post<{ success: boolean; reply?: string; error?: string }>('/api/admin/keys/test', {});
+      const res = await api.post<{ success: boolean; reply?: string; error?: string }>('/api/admin/llms/test', {});
       setTestResult({ success: res.success, message: res.reply || res.error || 'No response' });
     } catch (e) {
       setTestResult({ success: false, message: e instanceof Error ? e.message : 'Request failed' });

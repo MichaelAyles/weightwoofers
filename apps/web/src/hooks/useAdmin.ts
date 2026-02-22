@@ -54,7 +54,7 @@ export function useAdminKeys() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get<{ keys: ApiKey[] }>('/api/admin/keys');
+      const res = await api.get<{ keys: ApiKey[] }>('/api/admin/llms');
       setKeys(res.keys);
     } catch { setKeys([]); }
     setLoading(false);
@@ -63,17 +63,17 @@ export function useAdminKeys() {
   useEffect(() => { refresh(); }, [refresh]);
 
   const createKey = useCallback(async (data: { name: string; key_value: string; provider?: string }) => {
-    await api.post('/api/admin/keys', data);
+    await api.post('/api/admin/llms', data);
     await refresh();
   }, [refresh]);
 
   const updateKey = useCallback(async (id: string, data: { name?: string; is_active?: number }) => {
-    await api.put('/api/admin/keys/' + id, data);
+    await api.put('/api/admin/llms/' + id, data);
     await refresh();
   }, [refresh]);
 
   const deleteKey = useCallback(async (id: string) => {
-    await api.del('/api/admin/keys/' + id);
+    await api.del('/api/admin/llms/' + id);
     await refresh();
   }, [refresh]);
 
