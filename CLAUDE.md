@@ -34,7 +34,6 @@ npm run build --workspace=apps/web      # Production build
 
 # Backend
 npm run dev --workspace=apps/api        # wrangler dev (local Workers)
-npm run deploy --workspace=apps/api     # wrangler deploy
 
 # Database (run from apps/api/ directory)
 cd apps/api && npx wrangler d1 execute DB --local --file=src/db/schema.sql
@@ -42,7 +41,15 @@ cd apps/api && npx wrangler d1 execute DB --local --file=src/db/migration-002-ad
 
 # Type checking (API has no build script — use tsc directly)
 npx tsc --noEmit -p apps/api/tsconfig.json
+
+# Manual deploy (normally handled by GitHub Actions on push to main)
+cd apps/web && npm run build && npx wrangler pages deploy dist --project-name=weightwoofers --commit-dirty=true
+cd apps/api && npx wrangler deploy
 ```
+
+## Deployment
+
+Pushing to `main` triggers GitHub Actions (`.github/workflows/deploy.yml`) which deploys both the frontend (Cloudflare Pages) and API (Cloudflare Workers) automatically. Requires `CLOUDFLARE_API_TOKEN` secret in the repo.
 
 ## Architecture
 
