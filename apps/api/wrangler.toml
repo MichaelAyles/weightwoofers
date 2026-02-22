@@ -1,6 +1,7 @@
 name = "weightwoofers-api"
 main = "src/index.ts"
 compatibility_date = "2025-02-14"
+workers_dev = true
 
 routes = [
   { pattern = "weightwoofers.mikeayles.com/api/*", zone_name = "mikeayles.com" }
