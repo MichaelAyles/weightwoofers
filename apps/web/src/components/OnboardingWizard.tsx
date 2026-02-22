@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Pet, CreatePetRequest, ActivityLevel } from '../lib/types';
 import { api } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const ACTIVITY_LEVELS: { value: ActivityLevel; label: string; description: string }[] = [
   { value: 'low', label: 'Low', description: 'Senior or very sedentary' },
@@ -11,6 +12,7 @@ const ACTIVITY_LEVELS: { value: ActivityLevel; label: string; description: strin
 ];
 
 export function OnboardingWizard({ onComplete }: { onComplete: (pet?: Pet) => void }) {
+  const { user, logout } = useAuth();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<CreatePetRequest>({
     name: '',
@@ -41,7 +43,18 @@ export function OnboardingWizard({ onComplete }: { onComplete: (pet?: Pet) => vo
   return (
     <div className="min-h-screen bg-surface-dim flex items-center justify-center p-4">
       <div className="bg-surface rounded-2xl shadow-lg max-w-md w-full p-6">
-        <h1 className="text-2xl font-bold text-text mb-1">WeightWoofers</h1>
+        <div className="flex items-center justify-between mb-1">
+          <h1 className="text-2xl font-bold text-text">WeightWoofers</h1>
+          <div className="flex items-center gap-3">
+            {user && <span className="text-sm text-text-muted">{user.name || user.email}</span>}
+            <button
+              onClick={logout}
+              className="text-sm text-text-muted hover:text-text transition-colors"
+            >
+              Log out
+            </button>
+          </div>
+        </div>
         <p className="text-text-muted mb-6">Let's set up your pet's profile</p>
 
         {step === 0 && (
