@@ -59,7 +59,7 @@ auth.post('/api/auth/signup', async (c) => {
   setSessionCookie(c, token);
 
   return c.json({
-    user: { id: user!.id, email: user!.email, name: user!.name },
+    user: { id: user!.id, email: user!.email, name: user!.name, is_admin: user!.is_admin },
   }, 201);
 });
 
@@ -91,7 +91,7 @@ auth.post('/api/auth/login', async (c) => {
   setSessionCookie(c, token);
 
   return c.json({
-    user: { id: user.id, email: user.email, name: user.name },
+    user: { id: user.id, email: user.email, name: user.name, is_admin: user.is_admin },
   });
 });
 
@@ -129,7 +129,7 @@ auth.get('/api/auth/me', async (c) => {
   }
 
   return c.json({
-    user: { id: user.id, email: user.email, name: user.name },
+    user: { id: user.id, email: user.email, name: user.name, is_admin: user.is_admin },
   });
 });
 

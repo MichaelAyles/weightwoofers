@@ -14,9 +14,10 @@ import { FoodLog } from './FoodLog';
 
 interface DashboardProps {
   onNavigatePets: () => void;
+  onNavigateAdmin?: () => void;
 }
 
-export function Dashboard({ onNavigatePets }: DashboardProps) {
+export function Dashboard({ onNavigatePets, onNavigateAdmin }: DashboardProps) {
   const { pets, loading: petsLoading, refresh: refreshPets } = usePets();
   const { activePet, setActivePet } = useActivePet(pets);
   const { summary, refresh: refreshSummary } = useDailySummary(activePet?.id ?? null);
@@ -67,6 +68,7 @@ export function Dashboard({ onNavigatePets }: DashboardProps) {
         activePet={activePet}
         onSwitchPet={setActivePet}
         onNavigatePets={onNavigatePets}
+        onNavigateAdmin={onNavigateAdmin}
       />
       {activePet && budget && (
         <div className="flex items-center justify-between px-4 py-2 bg-surface border-b border-border">

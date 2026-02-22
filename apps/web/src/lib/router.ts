@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 
-export type Route = 'landing' | 'login' | 'signup' | 'dashboard' | 'pets';
+export type Route = 'landing' | 'login' | 'signup' | 'dashboard' | 'pets' | 'admin' | 'admin-users' | 'admin-keys' | 'admin-pets' | 'admin-foods';
 
 function getRouteFromHash(): Route {
   const hash = window.location.hash.slice(1) || '';
-  const valid: Route[] = ['landing', 'login', 'signup', 'dashboard', 'pets'];
+  const valid: Route[] = ['landing', 'login', 'signup', 'dashboard', 'pets', 'admin', 'admin-users', 'admin-keys', 'admin-pets', 'admin-foods'];
   return valid.includes(hash as Route) ? (hash as Route) : 'landing';
 }
 

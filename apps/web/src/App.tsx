@@ -4,6 +4,7 @@ import { LandingPage } from './components/LandingPage';
 import { AuthForm } from './components/AuthForm';
 import { Dashboard } from './components/Dashboard';
 import { PetsPage } from './components/PetsPage';
+import { AdminPage } from './components/AdminPage';
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -50,7 +51,16 @@ function AppRoutes() {
     return <PetsPage onBack={() => navigate('dashboard')} />;
   }
 
-  return <Dashboard onNavigatePets={() => navigate('pets')} />;
+  if (route.startsWith('admin') && user.is_admin) {
+    return <AdminPage onBack={() => navigate('dashboard')} />;
+  }
+
+  // Redirect non-admin away from admin routes
+  if (route.startsWith('admin')) {
+    navigate('dashboard');
+  }
+
+  return <Dashboard onNavigatePets={() => navigate('pets')} onNavigateAdmin={user.is_admin ? () => navigate('admin') : undefined} />;
 }
 
 export function App() {

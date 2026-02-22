@@ -6,9 +6,10 @@ interface AppHeaderProps {
   activePet: Pet | null;
   onSwitchPet: (id: string) => void;
   onNavigatePets: () => void;
+  onNavigateAdmin?: () => void;
 }
 
-export function AppHeader({ pets, activePet, onSwitchPet, onNavigatePets }: AppHeaderProps) {
+export function AppHeader({ pets, activePet, onSwitchPet, onNavigatePets, onNavigateAdmin }: AppHeaderProps) {
   const { user, logout } = useAuth();
 
   return (
@@ -32,6 +33,14 @@ export function AppHeader({ pets, activePet, onSwitchPet, onNavigatePets }: AppH
         >
           Manage Pets
         </button>
+        {user?.is_admin === 1 && onNavigateAdmin && (
+          <button
+            onClick={onNavigateAdmin}
+            className="text-sm text-primary hover:underline"
+          >
+            Admin
+          </button>
+        )}
       </div>
       <div className="flex items-center gap-3">
         {user && <span className="text-sm text-text-muted">{user.name || user.email}</span>}

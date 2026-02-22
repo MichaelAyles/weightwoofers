@@ -15,7 +15,18 @@ export interface User {
   email: string;
   password_hash: string;
   name: string | null;
+  is_admin: number;
   created_at: string;
+}
+
+export interface ApiKey {
+  id: string;
+  name: string;
+  key_value: string;
+  provider: string;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Session {

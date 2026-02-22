@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     name TEXT,
+    is_admin INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now'))
 );
 
@@ -61,6 +62,16 @@ CREATE TABLE IF NOT EXISTS log_entries (
     kcal REAL,
     logged_at TEXT DEFAULT (datetime('now')),
     meal_type TEXT
+);
+
+CREATE TABLE IF NOT EXISTS api_keys (
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(8)))),
+    name TEXT NOT NULL,
+    key_value TEXT NOT NULL,
+    provider TEXT NOT NULL DEFAULT 'openrouter',
+    is_active INTEGER DEFAULT 1,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS clarifications (

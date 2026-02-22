@@ -2,7 +2,9 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import type { AppEnv } from './types';
 import { authMiddleware } from './middleware/auth';
+import { adminMiddleware } from './middleware/admin';
 import auth from './routes/auth';
+import adminRoutes from './routes/admin';
 import pets from './routes/pets';
 import foods from './routes/foods';
 import log from './routes/log';
@@ -25,6 +27,10 @@ app.route('/', auth);
 
 // Apply auth middleware to all other /api/* routes
 app.use('/api/*', authMiddleware);
+
+// Admin routes (auth middleware already applied above, add admin check)
+app.use('/api/admin/*', adminMiddleware);
+app.route('/', adminRoutes);
 
 app.route('/', pets);
 app.route('/', foods);

@@ -91,8 +91,18 @@ export interface User {
   id: string;
   email: string;
   name: string | null;
+  is_admin: number;
 }
 
 export interface AuthResponse {
   user: User;
+}
+
+export interface ApiKey {
+  id: string;
+  name: string;
+  provider: string;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
 }
