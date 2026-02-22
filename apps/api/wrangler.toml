@@ -2,7 +2,11 @@ name = "weightwoofers-api"
 main = "src/index.ts"
 compatibility_date = "2025-02-14"
 
+routes = [
+  { pattern = "weightwoofers.mikeayles.com/api/*", zone_name = "mikeayles.com" }
+]
+
 [[d1_databases]]
 binding = "DB"
 database_name = "weightwoofers"
-database_id = "local"
+database_id = "fc915866-2366-4574-8a06-cd79151a1502"
