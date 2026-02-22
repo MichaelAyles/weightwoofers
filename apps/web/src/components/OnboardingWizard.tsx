@@ -10,7 +10,7 @@ const ACTIVITY_LEVELS: { value: ActivityLevel; label: string; description: strin
   { value: 'very_high', label: 'Very High', description: 'Working dog or puppy' },
 ];
 
-export function OnboardingWizard({ onComplete }: { onComplete: (pet: Pet) => void }) {
+export function OnboardingWizard({ onComplete }: { onComplete: (pet?: Pet) => void }) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<CreatePetRequest>({
     name: '',

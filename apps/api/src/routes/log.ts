@@ -1,29 +1,26 @@
 import { Hono } from 'hono';
-import type { Food, LogEntry, Clarification, LogRequest, LogResponse, Pet } from '../types';
+import type { AppEnv, Food, LogEntry, Clarification, LogRequest, LogResponse, Pet } from '../types';
 import { parseInput } from '../services/parser';
 import { matchFood } from '../services/matcher';
 import { resolveWeightG, calculateEntryKcal, calculateCompleteness } from '../services/nutrition';
 import { generateClarifications } from '../services/profiler';
 import { lookupNutrition } from '../services/nutrition-lookup';
 
-type Bindings = { DB: D1Database; OPENROUTER_API_KEY: string };
-
-const log = new Hono<{ Bindings: Bindings }>();
-
-const USER_ID = 'default_user';
+const log = new Hono<AppEnv>();
 
 log.post('/api/log', async (c) => {
+  const userId = c.get('userId');
   const { raw_input, pet_id } = await c.req.json<LogRequest>();
 
   // Get pet for budget
   const pet = await c.env.DB.prepare('SELECT * FROM pets WHERE id = ? AND user_id = ?')
-    .bind(pet_id, USER_ID)
+    .bind(pet_id, userId)
     .first<Pet>();
   if (!pet) return c.json({ error: 'Pet not found' }, 404);
 
   // Get user's known foods
   const foodsResult = await c.env.DB.prepare('SELECT * FROM foods WHERE user_id = ?')
-    .bind(USER_ID)
+    .bind(userId)
     .all<Food>();
   const userFoods = foodsResult.results;
 
@@ -67,7 +64,7 @@ log.post('/api/log', async (c) => {
       `INSERT INTO foods (user_id, canonical_name, brand, variant, aliases, serving_unit, completeness_score, source)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`
     )
-      .bind(USER_ID, canonicalName, parsed.brand_guess, parsed.variant_guess, aliases, parsed.unit, 0, 'auto')
+      .bind(userId, canonicalName, parsed.brand_guess, parsed.variant_guess, aliases, parsed.unit, 0, 'auto')
       .first<Food>();
 
     // Attempt LLM nutrition auto-lookup for new foods
@@ -106,7 +103,7 @@ log.post('/api/log', async (c) => {
     `INSERT INTO log_entries (user_id, pet_id, food_id, raw_input, quantity, unit, weight_g, kcal, meal_type)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`
   )
-    .bind(USER_ID, pet_id, food?.id ?? null, raw_input, parsed.quantity, parsed.unit, weightG, kcal, parsed.meal_type)
+    .bind(userId, pet_id, food?.id ?? null, raw_input, parsed.quantity, parsed.unit, weightG, kcal, parsed.meal_type)
     .first<LogEntry>();
 
   // Generate clarifications if food is incomplete
@@ -121,7 +118,7 @@ log.post('/api/log', async (c) => {
         `INSERT INTO clarifications (user_id, log_entry_id, food_id, field, question, priority)
          VALUES (?, ?, ?, ?, ?, ?) RETURNING *`
       )
-        .bind(USER_ID, entry!.id, food.id, q.field, q.question, q.priority)
+        .bind(userId, entry!.id, food.id, q.field, q.question, q.priority)
         .first<Clarification>();
       if (clar) clarifications.push(clar);
     }
@@ -132,7 +129,7 @@ log.post('/api/log', async (c) => {
   const todayEntries = await c.env.DB.prepare(
     `SELECT * FROM log_entries WHERE user_id = ? AND pet_id = ? AND date(logged_at) = ? ORDER BY logged_at`
   )
-    .bind(USER_ID, pet_id, today)
+    .bind(userId, pet_id, today)
     .all<LogEntry>();
 
   const totalKcal = todayEntries.results.reduce((sum, e) => sum + (e.kcal ?? 0), 0);

@@ -86,3 +86,13 @@ export interface CreatePetRequest {
 }
 
 export type ActivityLevel = 'low' | 'normal' | 'moderate' | 'high' | 'very_high';
+
+export interface User {
+  id: string;
+  email: string;
+  name: string | null;
+}
+
+export interface AuthResponse {
+  user: User;
+}

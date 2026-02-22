@@ -1,21 +1,18 @@
 import { Hono } from 'hono';
-import type { Food, Clarification, ClarifyRequest, LogEntry } from '../types';
+import type { AppEnv, Food, Clarification, ClarifyRequest, LogEntry } from '../types';
 import { calculateCompleteness, calculateEntryKcal, resolveWeightG } from '../services/nutrition';
 
-type Bindings = { DB: D1Database; OPENROUTER_API_KEY: string };
-
-const clarify = new Hono<{ Bindings: Bindings }>();
-
-const USER_ID = 'default_user';
+const clarify = new Hono<AppEnv>();
 
 clarify.post('/api/clarify', async (c) => {
+  const userId = c.get('userId');
   const { clarification_id, value } = await c.req.json<ClarifyRequest>();
 
   // Get clarification
   const clar = await c.env.DB.prepare(
     'SELECT * FROM clarifications WHERE id = ? AND user_id = ?'
   )
-    .bind(clarification_id, USER_ID)
+    .bind(clarification_id, userId)
     .first<Clarification>();
   if (!clar) return c.json({ error: 'Clarification not found' }, 404);
   if (clar.resolved) return c.json({ error: 'Already resolved' }, 400);
@@ -88,7 +85,7 @@ clarify.post('/api/clarify', async (c) => {
   const remaining = await c.env.DB.prepare(
     `SELECT * FROM clarifications WHERE user_id = ? AND resolved = 0 ORDER BY priority`
   )
-    .bind(USER_ID)
+    .bind(userId)
     .all<Clarification>();
 
   return c.json({ resolved: true, remaining: remaining.results });

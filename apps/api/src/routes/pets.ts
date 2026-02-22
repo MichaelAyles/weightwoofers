@@ -1,31 +1,30 @@
 import { Hono } from 'hono';
-import type { Pet, CreatePetRequest, ActivityLevel } from '../types';
+import type { AppEnv, Pet, CreatePetRequest, ActivityLevel } from '../types';
 import { calculateMER } from '../services/nutrition';
 
-type Bindings = { DB: D1Database; OPENROUTER_API_KEY: string };
-
-const pets = new Hono<{ Bindings: Bindings }>();
-
-const USER_ID = 'default_user';
+const pets = new Hono<AppEnv>();
 
 pets.get('/api/pets', async (c) => {
+  const userId = c.get('userId');
   const result = await c.env.DB.prepare(
     'SELECT * FROM pets WHERE user_id = ? ORDER BY created_at DESC'
   )
-    .bind(USER_ID)
+    .bind(userId)
     .all<Pet>();
   return c.json(result.results);
 });
 
 pets.get('/api/pets/:id', async (c) => {
+  const userId = c.get('userId');
   const pet = await c.env.DB.prepare('SELECT * FROM pets WHERE id = ? AND user_id = ?')
-    .bind(c.req.param('id'), USER_ID)
+    .bind(c.req.param('id'), userId)
     .first<Pet>();
   if (!pet) return c.json({ error: 'Pet not found' }, 404);
   return c.json(pet);
 });
 
 pets.post('/api/pets', async (c) => {
+  const userId = c.get('userId');
   const body = await c.req.json<CreatePetRequest>();
   const activityLevel = (body.activity_level || 'normal') as ActivityLevel;
   const mer = body.weight_kg ? calculateMER(body.weight_kg, activityLevel) : null;
@@ -36,7 +35,7 @@ pets.post('/api/pets', async (c) => {
      RETURNING *`
   )
     .bind(
-      USER_ID,
+      userId,
       body.name,
       body.breed ?? null,
       body.weight_kg ?? null,
@@ -52,11 +51,12 @@ pets.post('/api/pets', async (c) => {
 });
 
 pets.put('/api/pets/:id', async (c) => {
+  const userId = c.get('userId');
   const id = c.req.param('id');
   const body = await c.req.json<Partial<CreatePetRequest>>();
 
   const existing = await c.env.DB.prepare('SELECT * FROM pets WHERE id = ? AND user_id = ?')
-    .bind(id, USER_ID)
+    .bind(id, userId)
     .first<Pet>();
   if (!existing) return c.json({ error: 'Pet not found' }, 404);
 
@@ -79,11 +79,36 @@ pets.put('/api/pets/:id', async (c) => {
       body.target_kcal_override ?? existing.target_kcal_override,
       mer,
       id,
-      USER_ID
+      userId
     )
     .first<Pet>();
 
   return c.json(result);
+});
+
+pets.delete('/api/pets/:id', async (c) => {
+  const userId = c.get('userId');
+  const id = c.req.param('id');
+
+  const existing = await c.env.DB.prepare('SELECT * FROM pets WHERE id = ? AND user_id = ?')
+    .bind(id, userId)
+    .first<Pet>();
+  if (!existing) return c.json({ error: 'Pet not found' }, 404);
+
+  // Cascade delete: clarifications → log_entries → pet
+  await c.env.DB.prepare(
+    'DELETE FROM clarifications WHERE log_entry_id IN (SELECT id FROM log_entries WHERE pet_id = ? AND user_id = ?)'
+  )
+    .bind(id, userId)
+    .run();
+  await c.env.DB.prepare('DELETE FROM log_entries WHERE pet_id = ? AND user_id = ?')
+    .bind(id, userId)
+    .run();
+  await c.env.DB.prepare('DELETE FROM pets WHERE id = ? AND user_id = ?')
+    .bind(id, userId)
+    .run();
+
+  return c.json({ ok: true });
 });
 
 export default pets;

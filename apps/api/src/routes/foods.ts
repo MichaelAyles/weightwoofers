@@ -1,31 +1,30 @@
 import { Hono } from 'hono';
-import type { Food } from '../types';
+import type { AppEnv, Food } from '../types';
 import { calculateCompleteness } from '../services/nutrition';
 
-type Bindings = { DB: D1Database; OPENROUTER_API_KEY: string };
-
-const foods = new Hono<{ Bindings: Bindings }>();
-
-const USER_ID = 'default_user';
+const foods = new Hono<AppEnv>();
 
 foods.get('/api/foods', async (c) => {
+  const userId = c.get('userId');
   const result = await c.env.DB.prepare(
     'SELECT * FROM foods WHERE user_id = ? ORDER BY canonical_name'
   )
-    .bind(USER_ID)
+    .bind(userId)
     .all<Food>();
   return c.json(result.results);
 });
 
 foods.get('/api/foods/:id', async (c) => {
+  const userId = c.get('userId');
   const food = await c.env.DB.prepare('SELECT * FROM foods WHERE id = ? AND user_id = ?')
-    .bind(c.req.param('id'), USER_ID)
+    .bind(c.req.param('id'), userId)
     .first<Food>();
   if (!food) return c.json({ error: 'Food not found' }, 404);
   return c.json(food);
 });
 
 foods.post('/api/foods', async (c) => {
+  const userId = c.get('userId');
   const body = await c.req.json<Partial<Food>>();
   const aliases = body.aliases ?? '[]';
   const completeness = calculateCompleteness(body as Food);
@@ -37,7 +36,7 @@ foods.post('/api/foods', async (c) => {
      RETURNING *`
   )
     .bind(
-      USER_ID,
+      userId,
       body.canonical_name ?? 'Unknown Food',
       body.brand ?? null,
       body.variant ?? null,
@@ -59,11 +58,12 @@ foods.post('/api/foods', async (c) => {
 });
 
 foods.put('/api/foods/:id', async (c) => {
+  const userId = c.get('userId');
   const id = c.req.param('id');
   const body = await c.req.json<Partial<Food>>();
 
   const existing = await c.env.DB.prepare('SELECT * FROM foods WHERE id = ? AND user_id = ?')
-    .bind(id, USER_ID)
+    .bind(id, userId)
     .first<Food>();
   if (!existing) return c.json({ error: 'Food not found' }, 404);
 
@@ -92,7 +92,7 @@ foods.put('/api/foods/:id', async (c) => {
       merged.source,
       completeness,
       id,
-      USER_ID
+      userId
     )
     .first<Food>();
 

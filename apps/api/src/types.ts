@@ -1,3 +1,30 @@
+// App environment type for Hono
+export type AppEnv = {
+  Bindings: {
+    DB: D1Database;
+    OPENROUTER_API_KEY: string;
+  };
+  Variables: {
+    userId: string;
+  };
+};
+
+// Auth types
+export interface User {
+  id: string;
+  email: string;
+  password_hash: string;
+  name: string | null;
+  created_at: string;
+}
+
+export interface Session {
+  id: string;
+  user_id: string;
+  expires_at: string;
+  created_at: string;
+}
+
 // Database row types
 
 export interface Pet {
