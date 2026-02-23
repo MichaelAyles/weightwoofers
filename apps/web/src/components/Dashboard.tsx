@@ -1,14 +1,12 @@
-import { useState } from 'react';
-import type { Pet, Clarification } from '../lib/types';
+import { useEffect } from 'react';
 import { useDailySummary } from '../hooks/useDailySummary';
-import { useLogFood } from '../hooks/useLogFood';
-import { useClarify } from '../hooks/useClarify';
+import { useChat } from '../hooks/useChat';
 import { usePets } from '../hooks/usePets';
 import { useActivePet } from '../hooks/useActivePet';
 import { OnboardingWizard } from './OnboardingWizard';
 import { AppHeader } from './AppHeader';
 import { FoodInput } from './FoodInput';
-import { ClarificationFlow } from './ClarificationFlow';
+import { ChatFlow } from './ChatFlow';
 import { DailySummary } from './DailySummary';
 import { FoodLog } from './FoodLog';
 
@@ -21,9 +19,27 @@ export function Dashboard({ onNavigatePets, onNavigateAdmin }: DashboardProps) {
   const { pets, loading: petsLoading, refresh: refreshPets } = usePets();
   const { activePet, setActivePet } = useActivePet(pets);
   const { summary, refresh: refreshSummary } = useDailySummary(activePet?.id ?? null);
-  const { logFood, loading: logLoading, error: logError } = useLogFood(activePet?.id ?? null);
-  const { resolve, loading: clarifyLoading } = useClarify();
-  const [clarifications, setClarifications] = useState<Clarification[]>([]);
+  const {
+    messages,
+    sessionActive,
+    loading: chatLoading,
+    error: chatError,
+    dailySummary: chatSummary,
+    sendMessage,
+    clearSession,
+  } = useChat(activePet?.id ?? null);
+
+  // When chat returns a daily summary, refresh the canonical summary too
+  useEffect(() => {
+    if (chatSummary) {
+      refreshSummary();
+    }
+  }, [chatSummary]);
+
+  // Clear chat session when switching pets
+  useEffect(() => {
+    clearSession();
+  }, [activePet?.id]);
 
   if (petsLoading) {
     return (
@@ -41,20 +57,8 @@ export function Dashboard({ onNavigatePets, onNavigateAdmin }: DashboardProps) {
     );
   }
 
-  async function handleLog(input: string) {
-    const res = await logFood(input);
-    if (res) {
-      setClarifications(res.clarifications);
-      refreshSummary();
-    }
-  }
-
-  async function handleClarify(id: string, value: string) {
-    const res = await resolve(id, value);
-    if (res) {
-      setClarifications(res.remaining);
-      refreshSummary();
-    }
+  async function handleSubmit(input: string) {
+    await sendMessage(input);
   }
 
   const budget = activePet
@@ -81,20 +85,20 @@ export function Dashboard({ onNavigatePets, onNavigateAdmin }: DashboardProps) {
           </div>
         </div>
       )}
-      <FoodInput onSubmit={handleLog} loading={logLoading} />
-      {logError && (
-        <div className="mx-4 mt-2 p-2 bg-danger/10 text-danger text-sm rounded-lg">{logError}</div>
-      )}
-      <ClarificationFlow
-        clarifications={clarifications}
-        onResolve={handleClarify}
-        loading={clarifyLoading}
+      <FoodInput
+        onSubmit={handleSubmit}
+        loading={chatLoading}
+        placeholder={sessionActive ? 'Reply...' : undefined}
       />
-      <DailySummary summary={summary} />
+      {chatError && (
+        <div className="mx-4 mt-2 p-2 bg-danger/10 text-danger text-sm rounded-lg">{chatError}</div>
+      )}
+      <ChatFlow messages={messages} loading={chatLoading} />
+      <DailySummary summary={chatSummary ?? summary} />
       <div className="max-w-md mx-auto">
         <FoodLog
-          entries={summary?.entries_today ?? []}
-          budgetKcal={summary?.budget_kcal ?? 0}
+          entries={(chatSummary ?? summary)?.entries_today ?? []}
+          budgetKcal={(chatSummary ?? summary)?.budget_kcal ?? 0}
         />
       </div>
     </div>

@@ -9,6 +9,7 @@ import pets from './routes/pets';
 import foods from './routes/foods';
 import log from './routes/log';
 import clarify from './routes/clarify';
+import chat from './routes/chat';
 import summary from './routes/summary';
 
 const app = new Hono<AppEnv>();
@@ -36,6 +37,7 @@ app.route('/', pets);
 app.route('/', foods);
 app.route('/', log);
 app.route('/', clarify);
+app.route('/', chat);
 app.route('/', summary);
 
 export default app;

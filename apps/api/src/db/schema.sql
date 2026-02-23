@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS foods (
     ash_pct REAL,
     source TEXT,
     completeness_score REAL,
+    kcal_per_item REAL,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 );
@@ -73,6 +74,25 @@ CREATE TABLE IF NOT EXISTS api_keys (
     is_active INTEGER DEFAULT 1,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS chat_sessions (
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(8)))),
+    user_id TEXT NOT NULL REFERENCES users(id),
+    pet_id TEXT NOT NULL REFERENCES pets(id),
+    status TEXT NOT NULL DEFAULT 'active',
+    created_at TEXT DEFAULT (datetime('now')),
+    completed_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(8)))),
+    session_id TEXT NOT NULL REFERENCES chat_sessions(id),
+    role TEXT NOT NULL,
+    content TEXT NOT NULL,
+    tool_calls TEXT,
+    tool_results TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS clarifications (

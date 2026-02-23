@@ -64,6 +64,7 @@ export interface Food {
   serving_unit: string | null;
   serving_weight_g: number | null;
   kcal_per_100g: number | null;
+  kcal_per_item: number | null;
   protein_pct: number | null;
   fat_pct: number | null;
   fibre_pct: number | null;
@@ -149,3 +150,115 @@ export interface CreatePetRequest {
 }
 
 export type ActivityLevel = 'low' | 'normal' | 'moderate' | 'high' | 'very_high';
+
+// Chat / Conversational types
+
+export interface ChatSession {
+  id: string;
+  user_id: string;
+  pet_id: string;
+  status: 'active' | 'completed';
+  created_at: string;
+  completed_at: string | null;
+}
+
+export interface ChatMessage {
+  id: string;
+  session_id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  tool_calls: string | null; // JSON
+  tool_results: string | null; // JSON
+  created_at: string;
+}
+
+// Actions the LLM can request
+export interface LogFoodAction {
+  action: 'log_food';
+  food_id: string;
+  quantity: number;
+  unit: string;
+  meal_type?: string;
+}
+
+export interface CreateFoodAction {
+  action: 'create_food';
+  canonical_name: string;
+  brand?: string;
+  variant?: string;
+  aliases?: string[];
+  serving_unit?: string;
+  serving_weight_g?: number;
+  kcal_per_100g?: number;
+  kcal_per_item?: number;
+  protein_pct?: number;
+  fat_pct?: number;
+  fibre_pct?: number;
+  moisture_pct?: number;
+}
+
+export interface UpdateFoodAction {
+  action: 'update_food';
+  food_id: string;
+  fields: Partial<{
+    canonical_name: string;
+    brand: string;
+    variant: string;
+    serving_unit: string;
+    serving_weight_g: number;
+    kcal_per_100g: number;
+    kcal_per_item: number;
+    protein_pct: number;
+    fat_pct: number;
+    fibre_pct: number;
+    moisture_pct: number;
+  }>;
+}
+
+export interface AddAliasAction {
+  action: 'add_alias';
+  food_id: string;
+  alias: string;
+}
+
+export interface AskUserAction {
+  action: 'ask_user';
+}
+
+export type ConversationAction =
+  | LogFoodAction
+  | CreateFoodAction
+  | UpdateFoodAction
+  | AddAliasAction
+  | AskUserAction;
+
+export interface LLMResponse {
+  message: string;
+  actions: ConversationAction[];
+}
+
+export interface ChatRequest {
+  pet_id: string;
+  message: string;
+  session_id?: string;
+}
+
+export interface ActionSummary {
+  type: 'logged' | 'created_food' | 'updated_food' | 'added_alias';
+  description: string;
+  kcal?: number;
+}
+
+export interface ChatResponseMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  actions?: ActionSummary[];
+}
+
+export interface ChatResponse {
+  session_id: string;
+  messages: ChatResponseMessage[];
+  entries_logged: LogEntry[];
+  daily_summary: DailySummary;
+  session_status: 'active' | 'completed';
+}

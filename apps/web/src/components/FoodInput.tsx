@@ -3,9 +3,10 @@ import { useState } from 'react';
 interface FoodInputProps {
   onSubmit: (input: string) => void;
   loading: boolean;
+  placeholder?: string;
 }
 
-export function FoodInput({ onSubmit, loading }: FoodInputProps) {
+export function FoodInput({ onSubmit, loading, placeholder }: FoodInputProps) {
   const [value, setValue] = useState('');
 
   function handleSubmit(e: React.FormEvent) {
@@ -21,7 +22,7 @@ export function FoodInput({ onSubmit, loading }: FoodInputProps) {
         type="text"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder='Log food... e.g. "1 scoop of nood"'
+        placeholder={placeholder ?? 'Log food... e.g. "1 scoop of nood"'}
         disabled={loading}
         className="flex-1 rounded-lg border border-border px-3 py-2 text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
         autoFocus

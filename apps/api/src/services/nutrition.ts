@@ -39,3 +39,26 @@ export function resolveWeightG(quantity: number, unit: string, food: Food): numb
   if (food.serving_weight_g != null) return quantity * food.serving_weight_g;
   return null;
 }
+
+/**
+ * Calculate kcal for a food entry, handling both per-item treats and weight-based foods.
+ * Returns null if insufficient data to calculate.
+ */
+export function calculateEntryKcalForFood(
+  quantity: number,
+  unit: string,
+  food: Food,
+): number | null {
+  // Per-item treats (dentasticks, etc.)
+  if (food.kcal_per_item != null && (unit === 'item' || unit === 'piece' || unit === 'treat' || unit === 'stick')) {
+    return food.kcal_per_item * quantity;
+  }
+
+  // Weight-based calculation
+  const weightG = resolveWeightG(quantity, unit, food);
+  if (weightG != null && food.kcal_per_100g != null) {
+    return calculateEntryKcal(weightG, food.kcal_per_100g);
+  }
+
+  return null;
+}

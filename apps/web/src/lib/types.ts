@@ -23,6 +23,7 @@ export interface Food {
   serving_unit: string | null;
   serving_weight_g: number | null;
   kcal_per_100g: number | null;
+  kcal_per_item: number | null;
   protein_pct: number | null;
   fat_pct: number | null;
   fibre_pct: number | null;
@@ -106,4 +107,32 @@ export interface ApiKey {
   is_active: number;
   created_at: string;
   updated_at: string;
+}
+
+// Chat / Conversational types
+
+export interface ActionSummary {
+  type: 'logged' | 'created_food' | 'updated_food' | 'added_alias';
+  description: string;
+  kcal?: number;
+}
+
+export interface ChatResponseMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  actions?: ActionSummary[];
+}
+
+export interface ChatRequest {
+  pet_id: string;
+  message: string;
+  session_id?: string;
+}
+
+export interface ChatResponse {
+  session_id: string;
+  messages: ChatResponseMessage[];
+  entries_logged: LogEntry[];
+  daily_summary: DailySummary;
+  session_status: 'active' | 'completed';
 }
